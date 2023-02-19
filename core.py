@@ -5,10 +5,12 @@
 import os
 import string
 import sys
+import time
 import warnings
 
 import numpy as np
 from ptttl.audio import ptttl_to_wav
+from scipy.signal import find_peaks
 import simpleaudio as sa
 
 warnings.simplefilter("ignore", DeprecationWarning)
@@ -108,56 +110,50 @@ def peak_count_in_tone(a):
     tone_len = 10755 # DEBUG based on output defaults, this works better
     tone_count = round((len(a) / tone_len))
     tones = np.array_split(a, tone_count)
-    
-    # TODO: improve with scipy peak counting
-    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html
+
+    # count peaks via scipy
     peak_counts = []
     for tone in tones:
-        prev = tone[0] or 0.001
-        threshold = 0.5
-        peaks = []
-        for num, i in enumerate(tone[1:], 1):
-            if (i - prev) / prev > threshold:
-                peaks.append(num)
-            prev = i or 0.001
-        peak_counts.append(len(peaks))
+        peak_counts.append(len(find_peaks(tone)[0]))
 
     return peak_counts
 
 def decode_wav(filename):
-    
+    t0 = time.time()
     a = array_from_wav(filename)
     peaks = peak_count_in_tone(a)
     alpha_peaks = [
-        130,
-        146,
-        164,
-        173,
-        195,
-        219,
-        243,
-        257,
-        290,
-        323,
-        343,
-        383,
-        433,
-        478,
-        507,
-        568,
-        633,
-        671,
-        746,
-        832,
-        923,
-        973,
-        1082,
-        1182,
-        1253,
-        1372]
+        32,
+        36,
+        41,
+        43,
+        48,
+        54,
+        61,
+        64,
+        72,
+        81,
+        86,
+        96,
+        108,
+        121,
+        128,
+        144,
+        161,
+        171,
+        192,
+        215,
+        241,
+        256,
+        287,
+        322,
+        341,
+        383
+    ]
     h = dict(zip(alpha_peaks, string.ascii_lowercase))
     h[0] = " " # spaces for all non ascii chars
     decoded_phrase = ''.join([h.get(c, '') for c in peaks])
+    print(f"decode elapsed: {time.time()-t0}")
     return peaks, decoded_phrase
 
 def play_and_decode_phrase(phrase, speed=16):
@@ -170,5 +166,8 @@ def play_and_decode_phrase(phrase, speed=16):
 
 
 if __name__ == "__main__":
-    results = play_and_decode_phrase(sys.argv[1], speed=32)
-    print(results[1])
+    try:
+        results = play_and_decode_phrase(sys.argv[1], speed=32)
+        print(results[1])
+    except Exception as e:
+        print(str(e))
