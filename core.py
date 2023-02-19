@@ -1,6 +1,5 @@
 """
-PTTL RTTL
-https://github.com/eriknyquist/ptttl
+
 """
 
 import os
@@ -110,6 +109,8 @@ def peak_count_in_tone(a):
     tone_count = round((len(a) / tone_len))
     tones = np.array_split(a, tone_count)
     
+    # TODO: improve with scipy peak counting
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html
     peak_counts = []
     for tone in tones:
         prev = tone[0] or 0.001
