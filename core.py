@@ -17,6 +17,7 @@ warnings.simplefilter("ignore", DeprecationWarning)
 
 INPUTFILE="bach.ptttl"
 OUTPUTFILE="output.wav"
+DEFAULT_SPEED=32
 
 
 def read_ptttl(filename):
@@ -35,12 +36,12 @@ def play_string(s):
     play_obj = wave_obj.play()
     play_obj.wait_done()
 
-def record_string(s, filename=OUTPUTFILE):
-    ptttl_str = phrase_to_ptttl(s)
+def record_string(s, filename=OUTPUTFILE, speed=DEFAULT_SPEED):
+    ptttl_str = phrase_to_ptttl(s, speed=speed)
     ptttl_to_wav(ptttl_str, filename)
     return filename
 
-def phrase_to_ptttl(phrase, speed=8):
+def phrase_to_ptttl(phrase, speed=DEFAULT_SPEED):
 
     h = {
         "a":"c3",
@@ -156,11 +157,11 @@ def decode_wav(filename):
     print(f"decode elapsed: {time.time()-t0}")
     return peaks, decoded_phrase
 
-def play_and_decode_phrase(phrase, speed=16):
+def play_and_decode_phrase(phrase, speed=DEFAULT_SPEED):
     TEMPFILE = 'temp.wav'
     ptttl_str = phrase_to_ptttl(phrase, speed=speed)
     play_string(ptttl_str)
-    peaks, decoded_phrase = decode_wav(record_string(phrase, filename=TEMPFILE))
+    peaks, decoded_phrase = decode_wav(record_string(phrase, filename=TEMPFILE, speed=8))
     os.remove(TEMPFILE)
     return peaks, decoded_phrase
 
