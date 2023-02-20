@@ -18,6 +18,7 @@ warnings.simplefilter("ignore", DeprecationWarning)
 INPUTFILE="bach.ptttl"
 OUTPUTFILE="output.wav"
 DEFAULT_SPEED=32
+FP_PROM=1
 
 
 def read_ptttl(filename):
@@ -93,6 +94,7 @@ def array_from_wav(filename):
     ys = np.fromstring(wavFrames, dtype=np.int16)
     return ys
 
+
 def peak_count_in_tone(a):
     """
     identify tones by 0 markers
@@ -102,20 +104,15 @@ def peak_count_in_tone(a):
     # get zeros
     zeros = np.where(a==0)
 
-    # # get tones by finding length of tone
-    # # NOTE: needs improvment, somtimes leading noise
-    # for i in range(len(zeros[0])):
-    #     if zeros[0][i+1] - zeros[0][i] > 100:
-    #         tone_len = zeros[0][i+1]
-    #         break
-    tone_len = 10755 # DEBUG based on output defaults, this works better
+    tone_len = 10755 # NOTE: hardcodes len to 44.1khz @ 8 beats @ 123 bpm
     tone_count = round((len(a) / tone_len))
     tones = np.array_split(a, tone_count)
 
     # count peaks via scipy
     peak_counts = []
     for tone in tones:
-        peak_counts.append(len(find_peaks(tone)[0]))
+        # peak_counts.append(len(find_peaks(tone)[0]))
+        peak_counts.append(len(find_peaks(tone, prominence=FP_PROM)[0]))
 
     return peak_counts
 
@@ -162,13 +159,17 @@ def play_and_decode_phrase(phrase, speed=DEFAULT_SPEED):
     ptttl_str = phrase_to_ptttl(phrase, speed=speed)
     play_string(ptttl_str)
     peaks, decoded_phrase = decode_wav(record_string(phrase, filename=TEMPFILE, speed=8))
-    os.remove(TEMPFILE)
+    # os.remove(TEMPFILE)
     return peaks, decoded_phrase
 
 
 if __name__ == "__main__":
     try:
-        results = play_and_decode_phrase(sys.argv[1], speed=32)
+        if len(sys.argv) == 3:
+            speed = sys.argv[2]
+        else:
+            speed = 32
+        results = play_and_decode_phrase(sys.argv[1], speed=speed)
         print(results[1])
     except Exception as e:
         print(str(e))
