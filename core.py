@@ -13,6 +13,8 @@ from ptttl.audio import ptttl_to_wav
 from scipy.signal import find_peaks
 import simpleaudio as sa
 
+from scratch import isolate_sine_wave_beeps, find_closest_key_value
+
 warnings.simplefilter("ignore", DeprecationWarning)
 
 INPUTFILE="bach.ptttl"
@@ -101,6 +103,9 @@ def peak_count_in_tone(a):
     count peaks in tone
     """
 
+    # # NOTE: testing signal cleanup
+    # a = isolate_sine_wave_beeps(a, 100, 1000)
+
     # get zeros
     zeros = np.where(a==0)
 
@@ -150,7 +155,8 @@ def decode_wav(filename):
     ]
     h = dict(zip(alpha_peaks, string.ascii_lowercase))
     h[0] = " " # spaces for all non ascii chars
-    decoded_phrase = ''.join([h.get(c, '') for c in peaks])
+    # decoded_phrase = ''.join([h.get(c, '') for c in peaks])
+    decoded_phrase = ''.join([find_closest_key_value(h, c) for c in peaks])
     print(f"decode elapsed: {time.time()-t0}")
     return peaks, decoded_phrase
 
