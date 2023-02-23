@@ -118,7 +118,6 @@ def peak_count_in_tone(a):
     # count peaks via scipy
     peak_counts = []
     for tone in tones:
-        # peak_counts.append(len(find_peaks(tone)[0]))
         peak_counts.append(len(find_peaks(tone, prominence=FP_PROM)[0]))
 
     return peak_counts
