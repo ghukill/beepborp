@@ -13,14 +13,14 @@ from ptttl.audio import ptttl_to_wav
 from scipy.signal import find_peaks
 import simpleaudio as sa
 
-from scratch import isolate_sine_wave_beeps, find_closest_key_value
+from utils import isolate_sine_wave_beeps, find_closest_key_value
 
 warnings.simplefilter("ignore", DeprecationWarning)
 
 INPUTFILE="bach.ptttl"
 OUTPUTFILE="output.wav"
 DEFAULT_SPEED=32
-FP_PROM=1
+FP_PROM=1000
 
 
 def read_ptttl(filename):
@@ -96,6 +96,13 @@ def array_from_wav(filename):
     ys = np.fromstring(wavFrames, dtype=np.int16)
     return ys
 
+def tones_from_array(a):
+
+    tone_len = 10755 # NOTE: hardcodes len to 44.1khz @ 8 beats @ 123 bpm
+    tone_count = round((len(a) / tone_len))
+    tones = np.array_split(a, tone_count)
+
+    return tones
 
 def peak_count_in_tone(a):
     """
@@ -104,14 +111,9 @@ def peak_count_in_tone(a):
     """
 
     # # NOTE: testing signal cleanup
-    # a = isolate_sine_wave_beeps(a, 100, 1000)
+    a = isolate_sine_wave_beeps(a, 100, 1000)
 
-    # get zeros
-    zeros = np.where(a==0)
-
-    tone_len = 10755 # NOTE: hardcodes len to 44.1khz @ 8 beats @ 123 bpm
-    tone_count = round((len(a) / tone_len))
-    tones = np.array_split(a, tone_count)
+    tones = tones_from_array(a)
 
     # count peaks via scipy
     peak_counts = []
@@ -121,44 +123,31 @@ def peak_count_in_tone(a):
 
     return peak_counts
 
+def peak_diffs_from_tones(tones):
+    tone_peak_diffs = []
+    for t in tones:
+        print(t.mean())
+        if t.mean() == 0:
+            tpd = 1000
+        else:
+            for x in [5000, 4000, 3000, 2000, 1000, 500]:
+                try:
+                    tpd = round(np.diff(find_peaks(t, prominence=x)[0]).mean())
+                    break
+                except:
+                    continue
+        tone_peak_diffs.append(tpd)
+    print(tone_peak_diffs)
+    return tone_peak_diffs
+
 def decode_wav(filename):
     t0 = time.time()
     a = array_from_wav(filename)
-    peaks = peak_count_in_tone(a)
-    alpha_peaks = [
-        32,
-        36,
-        41,
-        43,
-        48,
-        54,
-        61,
-        64,
-        72,
-        81,
-        86,
-        96,
-        108,
-        121,
-        128,
-        144,
-        161,
-        171,
-        192,
-        215,
-        241,
-        256,
-        287,
-        322,
-        341,
-        383
-    ]
-    h = dict(zip(alpha_peaks, string.ascii_lowercase))
-    h[0] = " " # spaces for all non ascii chars
-    # decoded_phrase = ''.join([h.get(c, '') for c in peaks])
-    decoded_phrase = ''.join([find_closest_key_value(h, c) for c in peaks])
+    tones = tones_from_array(a)
+    tone_peak_diffs = peak_diffs_from_tones(tones)
+    decoded_phrase = ''.join([find_closest_key_value(tpd) for tpd in tone_peak_diffs])
     print(f"decode elapsed: {time.time()-t0}")
-    return peaks, decoded_phrase
+    return decoded_phrase
 
 def play_and_decode_phrase(phrase, speed=DEFAULT_SPEED):
     TEMPFILE = 'temp.wav'
