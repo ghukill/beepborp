@@ -2,18 +2,15 @@
 
 """
 
-import os
-import string
 import sys
 import time
 import warnings
 
 import numpy as np
 from ptttl.audio import ptttl_to_wav
-from scipy.signal import find_peaks
 import simpleaudio as sa
 
-from utils import isolate_sine_wave_beeps, find_closest_key_value, clean_tone
+from utils import find_closest_key_value
 
 warnings.simplefilter("ignore", DeprecationWarning)
 
@@ -104,49 +101,19 @@ def tones_from_array(a):
 
     return tones
 
-def peak_count_in_tone(a):
-    """
-    identify tones by 0 markers
-    count peaks in tone
-    """
-
-    # # NOTE: testing signal cleanup
-    a = isolate_sine_wave_beeps(a, 100, 1000)
-
-    tones = tones_from_array(a)
-
-    # count peaks via scipy
-    peak_counts = []
-    for tone in tones:
-        peak_counts.append(len(find_peaks(tone, prominence=FP_PROM)[0]))
-
-    return peak_counts
-
-def peak_diffs_from_tones(tones):
-    tone_peak_diffs = []
-    for t in tones:
-
-        # clean tone
-        t = clean_tone(t)
-
-        if t.mean() == 0:
-            tpd = 1000
-        else:
-            for x in [5000, 4000, 3000, 2000, 1000, 500]:
-                try:
-                    tpd = round(np.diff(find_peaks(t, prominence=x)[0]).mean())
-                    break
-                except:
-                    continue
-        tone_peak_diffs.append(tpd)
-    return tone_peak_diffs
-
 def decode_wav(filename):
     t0 = time.time()
     a = array_from_wav(filename)
     tones = tones_from_array(a)
-    tone_peak_diffs = peak_diffs_from_tones(tones)
-    decoded_phrase = ''.join([find_closest_key_value(tpd) for tpd in tone_peak_diffs])
+    chars = []
+    for tone in tones:
+        tone_fft = np.fft.rfft(tone)
+        if np.min(tone_fft) > -1_000_000: # cutoff that suggests no distinct sin wave
+            char = ' '
+        else:
+            char = find_closest_key_value(np.argmin(tone_fft))
+        chars.append(char)
+    decoded_phrase = ''.join(chars)
     print(f"decode elapsed: {time.time()-t0}")
     return decoded_phrase
 
@@ -154,9 +121,8 @@ def play_and_decode_phrase(phrase, speed=DEFAULT_SPEED):
     TEMPFILE = 'temp.wav'
     ptttl_str = phrase_to_ptttl(phrase, speed=speed)
     play_string(ptttl_str)
-    peaks, decoded_phrase = decode_wav(record_string(phrase, filename=TEMPFILE, speed=8))
-    # os.remove(TEMPFILE)
-    return peaks, decoded_phrase
+    decoded_phrase = decode_wav(record_string(phrase, filename=TEMPFILE, speed=8))
+    return decoded_phrase
 
 
 if __name__ == "__main__":
@@ -166,6 +132,6 @@ if __name__ == "__main__":
         else:
             speed = 32
         results = play_and_decode_phrase(sys.argv[1], speed=speed)
-        print(results[1])
+        print(results)
     except Exception as e:
         print(str(e))

@@ -1,53 +1,44 @@
 import matplotlib.pyplot as plt
-import numpy as np
 from scipy import signal
 
-def isolate_sine_wave_beeps(audio_data, lowcut, highcut):
-    # apply a bandpass filter
-    nyquist = 0.5 * 44100 # hardcode 44.1khz
-    low = lowcut / nyquist
-    high = highcut / nyquist
-    b, a = signal.butter(5, [low, high], btype='band')
-    filtered_data = signal.filtfilt(b, a, audio_data)
-    
-    return filtered_data
 
-def find_closest_key_value(input_key):
+def find_closest_key_value(fft_idx):
     d = {
-        1000: ' ',
-        336: 'a',
-        299: 'b',
-        266: 'c',
-        252: 'd',
-        224: 'e',
-        200: 'f',
-        178: 'g',
-        168: 'h',
-        150: 'i',
-        134: 'j',
-        126: 'k',
-        112: 'l',
-        100: 'm',
-        89: 'n',
-        84: 'o',
-        75: 'p',
-        67: 'q',
-        63: 'r',
-        56: 's',
-        50: 't',
-        45: 'u',
-        42: 'v',
-        38: 'w',
-        33: 'x',
-        32: 'y',
-        28: 'z',
-     }
-    closest_key = min(d.keys(), key=lambda x: abs(x - input_key))
+        22: ' ',
+        31: 'a',
+        35: 'b',
+        40: 'c',
+        42: 'd',
+        47: 'e',
+        53: 'f',
+        60: 'g',
+        63: 'h',
+        71: 'i',
+        80: 'j',
+        85: 'k',
+        95: 'l',
+        107: 'm',
+        120: 'n',
+        127: 'o',
+        143: 'p',
+        160: 'q',
+        170: 'r',
+        191: 's',
+        214: 't',
+        240: 'u',
+        255: 'v',
+        286: 'w',
+        321: 'x',
+        340: 'y',
+        382: 'z'
+    }
+    closest_key = min(d.keys(), key=lambda x: abs(x - fft_idx))
     closest_value = d[closest_key]
-    if abs(closest_key - input_key) > 500:
+    if abs(closest_key - fft_idx) > 500:
         return " "
     else:
         return closest_value
+
 
 def plot_peaks(a, prominence=1):
     plt.close()
@@ -55,6 +46,7 @@ def plot_peaks(a, prominence=1):
     peaks, _ = signal.find_peaks(a, prominence=prominence)
     plt.plot(peaks, a[peaks], "x")
     plt.show()
+
 
 def clean_tone(tone):
     order = 5
