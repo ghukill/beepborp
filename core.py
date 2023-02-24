@@ -13,7 +13,7 @@ from ptttl.audio import ptttl_to_wav
 from scipy.signal import find_peaks
 import simpleaudio as sa
 
-from utils import isolate_sine_wave_beeps, find_closest_key_value
+from utils import isolate_sine_wave_beeps, find_closest_key_value, clean_tone
 
 warnings.simplefilter("ignore", DeprecationWarning)
 
@@ -125,7 +125,10 @@ def peak_count_in_tone(a):
 def peak_diffs_from_tones(tones):
     tone_peak_diffs = []
     for t in tones:
-        print(t.mean())
+
+        # clean tone
+        t = clean_tone(t)
+
         if t.mean() == 0:
             tpd = 1000
         else:
@@ -136,7 +139,6 @@ def peak_diffs_from_tones(tones):
                 except:
                     continue
         tone_peak_diffs.append(tpd)
-    print(tone_peak_diffs)
     return tone_peak_diffs
 
 def decode_wav(filename):

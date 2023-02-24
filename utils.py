@@ -12,14 +12,6 @@ def isolate_sine_wave_beeps(audio_data, lowcut, highcut):
     
     return filtered_data
 
-# def find_closest_key_value(dictionary, input_key):
-#     closest_key = min(dictionary.keys(), key=lambda x: abs(x - input_key))
-#     closest_value = dictionary[closest_key]
-#     if abs(closest_key - input_key) > 500:
-#         return ""
-#     else:
-#         return closest_value
-
 def find_closest_key_value(input_key):
     d = {
         1000: ' ',
@@ -53,7 +45,7 @@ def find_closest_key_value(input_key):
     closest_key = min(d.keys(), key=lambda x: abs(x - input_key))
     closest_value = d[closest_key]
     if abs(closest_key - input_key) > 500:
-        return ""
+        return " "
     else:
         return closest_value
 
@@ -63,3 +55,17 @@ def plot_peaks(a, prominence=1):
     peaks, _ = signal.find_peaks(a, prominence=prominence)
     plt.plot(peaks, a[peaks], "x")
     plt.show()
+
+def clean_tone(tone):
+    order = 5
+    fs = 1000.0  # Sample rate, in Hz
+    cutoff = 50.0  # Cutoff frequency of the filter, in Hz
+
+    # Define the filter
+    nyquist = 0.5 * fs
+    normal_cutoff = cutoff / nyquist
+    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
+
+    # Apply the filter to the dirty signal
+    clean_signal = signal.filtfilt(b, a, tone)
+    return clean_signal
