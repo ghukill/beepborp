@@ -1,5 +1,6 @@
 """"""
 
+import os
 import time
 import warnings
 
@@ -155,3 +156,11 @@ def decode_wav(filename):
     decoded_phrase = ''.join(chars)
     print(f"decode elapsed: {time.time() - t0}")
     return decoded_phrase
+
+
+def convert_file_to_wav(filename, output_file=None):
+    if output_file is None:
+        output_file = "data/convert_temp.wav"
+    cmd = f"ffmpeg -loglevel quiet -i {filename} -ar 44100 {output_file}"
+    os.system(cmd)
+    return output_file
