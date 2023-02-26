@@ -2,3 +2,7 @@ venv/
 .DS_Store
 .idea
 __pycache__/
+
+#data/convert_temp.wav
+#data/output.wav
+#data/temp.wav

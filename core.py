@@ -220,8 +220,8 @@ def decode_wav(filename):
 def convert_file_to_wav(filename, output_file=None):
     if output_file is None:
         output_file = "data/convert_temp.wav"
-        if os.path.exists(output_file):
-            os.remove(output_file)
+    if os.path.exists(output_file):
+        os.remove(output_file)
     cmd = f"ffmpeg -loglevel quiet -i {filename} -ar 44100 {output_file}"
     os.system(cmd)
     return output_file
