@@ -5,9 +5,12 @@ import re
 import time
 import warnings
 
+import librosa
+import matplotlib.pyplot as plt
 import numpy as np
 from ptttl.audio import ptttl_to_wav
 import requests
+from scipy import signal
 import simpleaudio as sa
 from wave import open as open_wave
 
@@ -76,7 +79,8 @@ FFT_IDX_TO_LETTER = {  # fft index calculated for letters a-z, based on 44.1khz,
     340: 'y',
     382: 'z'
 }
-
+SR = 44100 # sampling rate
+WINDOW = 1 # window size for librosa
 
 def read_ptttl(filename):
     with open(filename, 'r') as fh:
@@ -106,6 +110,11 @@ def record_string(s, filename=OUTPUTFILE, speed=DEFAULT_PLAY_SPEED):
 
 def phrase_to_ptttl(phrase, speed=DEFAULT_PLAY_SPEED):
     melody_notes = []
+
+    # add header and leader
+    phrase = f"goober {phrase} tronic"
+
+    # build melody
     for char in phrase:
         melody_notes.append(LETTER_TO_NOTES.get(char.lower().strip(), "p"))
     melody = ",".join(melody_notes)
@@ -170,9 +179,30 @@ def get_letter_from_fft_idx(fft_idx):
         return closest_value
 
 
+def extract_msg_from_array(raw_array):
+    # load
+    header, leader = np.load('data/header.npy'), np.load('data/leader.npy')
+    # rec, _ = librosa.load('data/rec.wav', sr=SR, mono=False)
+
+    # find header and leader index in recording
+    header_c = signal.correlate(raw_array, header[:SR * WINDOW], mode='valid', method='fft')
+    leader_c = signal.correlate(raw_array, leader[:SR * WINDOW], mode='valid', method='fft')
+
+    # get start end points
+    msg_start, msg_end = (np.argmax(header_c) + len(header) + WAV_FRAMES), np.argmax(leader_c)
+    msg = raw_array[msg_start:msg_end]
+
+    return msg
+
+
+
 def decode_wav(filename):
     t0 = time.time()
     a = array_from_wav(filename)
+
+    # extract header and leader
+    a = extract_msg_from_array(a)
+
     tones = tones_from_array(a)
     chars = []
     for tone in tones:
@@ -190,6 +220,8 @@ def decode_wav(filename):
 def convert_file_to_wav(filename, output_file=None):
     if output_file is None:
         output_file = "data/convert_temp.wav"
+        if os.path.exists(output_file):
+            os.remove(output_file)
     cmd = f"ffmpeg -loglevel quiet -i {filename} -ar 44100 {output_file}"
     os.system(cmd)
     return output_file
