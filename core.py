@@ -120,11 +120,11 @@ def ptttl_to_buzzer_rtttl(ptttl_str):
     melody_bumped = re.sub(r'\d+', increment, melody)
     return "bpbp" + header + melody_bumped
 
-def send_phrase_to_ha(phrase):
+def send_phrase_to_ha(ptttl_str):
     """
     Requires env var HA_ENDPOINT to be set"
     """
-    rtttl_str = ptttl_to_buzzer_rtttl(phrase_to_ptttl(phrase))
+    rtttl_str = ptttl_to_buzzer_rtttl(ptttl_str)
     ha_endpoint = os.getenv("HA_ENDPOINT")
     if ha_endpoint is None:
         raise Exception("env var HA_ENDPOINT must be set")
@@ -133,7 +133,6 @@ def send_phrase_to_ha(phrase):
     response = requests.post(
         url,
         json={
-            "phrase":phrase,
             "rtttl":rtttl_str
         },
         headers={
