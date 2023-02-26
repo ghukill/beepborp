@@ -7,6 +7,7 @@ import warnings
 
 import numpy as np
 from ptttl.audio import ptttl_to_wav
+import requests
 import simpleaudio as sa
 from wave import open as open_wave
 
@@ -117,7 +118,29 @@ def ptttl_to_buzzer_rtttl(ptttl_str):
         return str(int(match.group(0)) + 1)
 
     melody_bumped = re.sub(r'\d+', increment, melody)
-    return "ptor" + header + melody_bumped
+    return "bpbp" + header + melody_bumped
+
+def send_phrase_to_ha(phrase):
+    """
+    Requires env var HA_ENDPOINT to be set"
+    """
+    rtttl_str = ptttl_to_buzzer_rtttl(phrase_to_ptttl(phrase))
+    ha_endpoint = os.getenv("HA_ENDPOINT")
+    if ha_endpoint is None:
+        raise Exception("env var HA_ENDPOINT must be set")
+    url = f"{ha_endpoint.rstrip('/')}/api/webhook/play_rtttl"
+    print(f"sending: {rtttl_str} to {url}")
+    response = requests.post(
+        url,
+        json={
+            "phrase":phrase,
+            "rtttl":rtttl_str
+        },
+        headers={
+            "Content-Type":"application/json"
+        }
+    )
+    print(response.status_code)
 
 
 def array_from_wav(filename):
