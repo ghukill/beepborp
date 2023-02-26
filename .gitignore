@@ -3,6 +3,6 @@ venv/
 .idea
 __pycache__/
 
-#data/convert_temp.wav
-#data/output.wav
-#data/temp.wav
+data/convert_temp.wav
+data/output.wav
+data/temp.wav
