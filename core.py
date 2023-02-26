@@ -1,6 +1,7 @@
 """"""
 
 import os
+import re
 import time
 import warnings
 
@@ -107,10 +108,16 @@ def phrase_to_ptttl(phrase, speed=DEFAULT_PLAY_SPEED):
     for char in phrase:
         melody_notes.append(LETTER_TO_NOTES.get(char.lower().strip(), "p"))
     melody = ",".join(melody_notes)
-    return f"""{phrase}:
-b=123, d={speed}, o=1:
-{melody}
-"""
+    return f"""{phrase}:d={speed},o=1,b=123:{melody}"""
+
+def ptttl_to_buzzer_rtttl(ptttl_str):
+    """Convert ptttl to rtttl with octave bumped"""
+    name, header, melody = re.match(r'(.+?)(:.*:)(.*)',ptttl_str).groups()
+    def increment(match):
+        return str(int(match.group(0)) + 1)
+
+    melody_bumped = re.sub(r'\d+', increment, melody)
+    return "ptor" + header + melody_bumped
 
 
 def array_from_wav(filename):
