@@ -23,6 +23,7 @@ DEFAULT_RECORD_SPEED = 8
 WAV_FRAMES = 10756  # NOTE: hardcodes len to 44.1khz @ 8 beats @ 123 bpm
 FFT_CUTOFF = -1_000_000  # NOTE: cutoff that suggests no distinct sin wave
 LETTER_TO_NOTES = {
+    # a-z
     "a": "c3",
     "b": "d3",
     "c": "e3",
@@ -48,10 +49,12 @@ LETTER_TO_NOTES = {
     "w": "d6",
     "x": "e6",
     "y": "f6",
-    "z": "g6"
+    "z": "g6",
+    # special chars
+    " ": "a6",
+    ".": "b6",
 }
 FFT_IDX_TO_LETTER = {  # fft index calculated for letters a-z, based on 44.1khz, 123 bpm, 8 duration
-    22: ' ',
     31: 'a',
     35: 'b',
     40: 'c',
@@ -77,7 +80,11 @@ FFT_IDX_TO_LETTER = {  # fft index calculated for letters a-z, based on 44.1khz,
     286: 'w',
     321: 'x',
     340: 'y',
-    382: 'z'
+    382: 'z',
+
+    # special chars
+    430: ' ',
+    482: '.'
 }
 SR = 44100 # sampling rate
 WINDOW = 1 # window size for librosa
@@ -116,7 +123,7 @@ def phrase_to_ptttl(phrase, speed=DEFAULT_PLAY_SPEED):
 
     # build melody
     for char in phrase:
-        melody_notes.append(LETTER_TO_NOTES.get(char.lower().strip(), "p"))
+        melody_notes.append(LETTER_TO_NOTES.get(char.lower(), "p"))
     melody = ",".join(melody_notes)
     return f"""{phrase}:d={speed},o=1,b=123:{melody}"""
 
@@ -160,8 +167,7 @@ def array_from_wav(filename):
 
 
 def tones_from_array(a):
-    tone_len = WAV_FRAMES
-    tone_count = round((len(a) / tone_len))
+    tone_count = round((len(a) / WAV_FRAMES))
     tones = np.array_split(a, tone_count)
     return tones
 
@@ -170,7 +176,7 @@ def get_letter_from_fft_idx(fft_idx):
     """
     Based on the index of the largest FFT peak, access the closest letter to that index
     """
-
+    print(fft_idx)
     closest_key = min(FFT_IDX_TO_LETTER.keys(), key=lambda x: abs(x - fft_idx))
     closest_value = FFT_IDX_TO_LETTER[closest_key]
     if abs(closest_key - fft_idx) > 500:
@@ -182,14 +188,13 @@ def get_letter_from_fft_idx(fft_idx):
 def extract_msg_from_array(raw_array):
     # load
     header, leader = np.load('data/header.npy'), np.load('data/leader.npy')
-    # rec, _ = librosa.load('data/rec.wav', sr=SR, mono=False)
 
     # find header and leader index in recording
     header_c = signal.correlate(raw_array, header[:SR * WINDOW], mode='valid', method='fft')
     leader_c = signal.correlate(raw_array, leader[:SR * WINDOW], mode='valid', method='fft')
 
     # get start end points
-    msg_start, msg_end = (np.argmax(header_c) + len(header) + WAV_FRAMES), np.argmax(leader_c)
+    msg_start, msg_end = (np.argmax(header_c) + len(header) + WAV_FRAMES), (np.argmax(leader_c) - WAV_FRAMES)
     msg = raw_array[msg_start:msg_end]
 
     return msg
